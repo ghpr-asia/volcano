@@ -236,7 +236,7 @@ func TestAbortingState_Execute(t *testing.T) {
 					t.Error("Error while retrieving value from Cache")
 				}
 
-				if testcase.JobInfo.Job.Status.Pending == 0 && testcase.JobInfo.Job.Status.Running == 0 && testcase.JobInfo.Job.Status.Terminating == 0 {
+				if jobInfo.Job.Status.Pending == 0 && jobInfo.Job.Status.Running == 0 && jobInfo.Job.Status.Terminating == 0 {
 					if jobInfo.Job.Status.State.Phase != v1alpha1.Aborted {
 						t.Error("Phase Should be aborted")
 					}
@@ -336,7 +336,7 @@ func TestCompletingState_Execute(t *testing.T) {
 				t.Error("Error while retrieving value from Cache")
 			}
 
-			if testcase.JobInfo.Job.Status.Running == 0 && testcase.JobInfo.Job.Status.Pending == 0 && testcase.JobInfo.Job.Status.Terminating == 0 {
+			if jobInfo.Job.Status.Running == 0 && jobInfo.Job.Status.Pending == 0 && jobInfo.Job.Status.Terminating == 0 {
 				if jobInfo.Job.Status.State.Phase != v1alpha1.Completed {
 					fmt.Println(jobInfo.Job.Status.State.Phase)
 					t.Errorf("Expected Phase to be Completed State in test case: %d", i)
@@ -1254,7 +1254,7 @@ func TestTerminatingState_Execute(t *testing.T) {
 			Name: "TerminatingState- With pod count not equal to zero",
 			JobInfo: &apis.JobInfo{
 				Namespace: namespace,
-				Name:      "jobinfo1",
+				Name:      "jobinfo2",
 				Job: &v1alpha1.Job{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "Job1",
@@ -1299,7 +1299,7 @@ func TestTerminatingState_Execute(t *testing.T) {
 				t.Error("Error while retrieving value from Cache")
 			}
 
-			if testcase.JobInfo.Job.Status.Running == 0 && testcase.JobInfo.Job.Status.Pending == 0 && testcase.JobInfo.Job.Status.Terminating == 0 {
+			if jobInfo.Job.Status.Running == 0 && jobInfo.Job.Status.Pending == 0 && jobInfo.Job.Status.Terminating == 0 {
 
 				if jobInfo.Job.Status.State.Phase != v1alpha1.Terminated {
 					fmt.Println(jobInfo.Job.Status.State.Phase)
