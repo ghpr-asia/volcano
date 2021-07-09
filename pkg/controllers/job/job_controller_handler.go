@@ -331,6 +331,11 @@ func (cc *jobcontroller) deletePod(obj interface{}) {
 		return
 	}
 
+	// pod ran to completion - keeping track of it in cache and not requeue
+	if pod.Status.Phase == v1.PodSucceeded {
+		return
+	}
+
 	req := apis.Request{
 		Namespace: pod.Namespace,
 		JobName:   jobName,

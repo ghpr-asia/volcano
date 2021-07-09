@@ -70,9 +70,13 @@ func (cc *jobcontroller) killJob(jobInfo *apis.JobInfo, podRetainPhase state.Pha
 			_, retain := podRetainPhase[pod.Status.Phase]
 
 			if !retain {
-				err := cc.deleteJobPod(job.Name, pod)
+				existing, err := cc.deleteJobPod(job.Name, pod)
 				if err == nil {
-					terminating++
+					if existing {
+						terminating++
+					} else {
+						cc.cache.DeletePod(pod)
+					}
 					continue
 				}
 				// record the err, and then collect the pod info like retained pod
@@ -380,7 +384,7 @@ func (cc *jobcontroller) syncJob(jobInfo *apis.JobInfo, updateStatus state.Updat
 	for _, pod := range podToDelete {
 		go func(pod *v1.Pod) {
 			defer waitDeletionGroup.Done()
-			err := cc.deleteJobPod(job.Name, pod)
+			_, err := cc.deleteJobPod(job.Name, pod)
 			if err != nil {
 				// Failed to delete Pod, waitCreationGroup a moment and then create it again
 				// This is to ensure all podsMap under the same Job created
@@ -623,16 +627,19 @@ func (cc *jobcontroller) createOrUpdatePodGroup(job *batch.Job) error {
 	return err
 }
 
-func (cc *jobcontroller) deleteJobPod(jobName string, pod *v1.Pod) error {
+func (cc *jobcontroller) deleteJobPod(jobName string, pod *v1.Pod) (bool, error) {
 	err := cc.kubeClient.CoreV1().Pods(pod.Namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return false, nil
+		}
 		klog.Errorf("Failed to delete pod %s/%s for Job %s, err %#v",
 			pod.Namespace, pod.Name, jobName, err)
 
-		return fmt.Errorf("failed to delete pod %s, err %#v", pod.Name, err)
+		return true, fmt.Errorf("failed to delete pod %s, err %#v", pod.Name, err)
 	}
 
-	return nil
+	return true, nil
 }
 
 func (cc *jobcontroller) calcPGMinResources(job *batch.Job) *v1.ResourceList {
